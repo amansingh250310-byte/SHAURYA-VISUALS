@@ -1,4 +1,8 @@
 
+"use client";
+
+import { useEffect, useState } from "react";
+import { supabase } from "../lib/supabase";
 import {
   ArrowRight,
   Play,
@@ -14,6 +18,15 @@ import {
   Menu,
   WandSparkles,
 } from "lucide-react";
+
+type PortfolioItem = {
+  id: string;
+  title: string;
+  category: string | null;
+  description: string | null;
+  media_url: string;
+  media_type: string;
+};
 
 const whatsapp =
   "https://wa.me/917007927037?text=" +
@@ -60,6 +73,27 @@ const features = [
 ];
 
 export default function Home() {
+  const [projects, setProjects] = useState<PortfolioItem[]>([]);
+  const [portfolioLoading, setPortfolioLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadPortfolio() {
+      const { data, error } = await supabase
+        .from("portfolio")
+        .select("id, title, category, description, media_url, media_type");
+
+      if (error) {
+        console.error("Portfolio loading error:", error.message);
+      } else {
+        setProjects(data || []);
+      }
+
+      setPortfolioLoading(false);
+    }
+
+    loadPortfolio();
+  }, []);
+
   return (
     <main>
       <nav className="navbar">
@@ -239,9 +273,7 @@ export default function Home() {
             {services.map((service, index) => (
               <div className="card service-card" key={service.title}>
                 <div className="service-icon">{service.icon}</div>
-                <span className="service-number">
-                  0{index + 1}
-                </span>
+                <span className="service-number">0{index + 1}</span>
                 <h3>{service.title}</h3>
                 <p>{service.desc}</p>
                 <a href={whatsapp} target="_blank" rel="noreferrer">
@@ -262,39 +294,58 @@ export default function Home() {
             SELECTED <span className="gradient-text">WORK</span>
           </h2>
           <p className="section-subtitle">
-            A glimpse into the creative possibilities.
+            A glimpse into our latest creative projects.
           </p>
 
-          <div className="portfolio-grid">
-            <div className="portfolio-item portfolio-one">
-              <div className="portfolio-art">CINEMATIC</div>
-              <div className="portfolio-info">
-                <span>01 / VIDEO</span>
-                <h3>Cinematic Stories</h3>
-              </div>
-            </div>
+          {portfolioLoading ? (
+            <p className="portfolio-note">Loading creative projects...</p>
+          ) : projects.length > 0 ? (
+            <div className="portfolio-grid">
+              {projects.map((project) => (
+                <div className="portfolio-item" key={project.id}>
+                  {project.media_type?.toLowerCase() === "video" ? (
+                    <video
+                      src={project.media_url}
+                      controls
+                      playsInline
+                      preload="metadata"
+                      style={{
+                        width: "100%",
+                        height: "260px",
+                        objectFit: "cover",
+                        display: "block",
+                        background: "#111",
+                      }}
+                    />
+                  ) : (
+                    <img
+                      src={project.media_url}
+                      alt={project.title}
+                      loading="lazy"
+                      style={{
+                        width: "100%",
+                        height: "260px",
+                        objectFit: "cover",
+                        display: "block",
+                      }}
+                    />
+                  )}
 
-            <div className="portfolio-item portfolio-two">
-              <div className="portfolio-art">REELS</div>
-              <div className="portfolio-info">
-                <span>02 / SOCIAL MEDIA</span>
-                <h3>Social Media Edits</h3>
-              </div>
+                  <div className="portfolio-info">
+                    <span>
+                      {(project.category || "CREATIVE PROJECT").toUpperCase()}
+                    </span>
+                    <h3>{project.title}</h3>
+                    {project.description && <p>{project.description}</p>}
+                  </div>
+                </div>
+              ))}
             </div>
-
-            <div className="portfolio-item portfolio-three">
-              <div className="portfolio-art">BRAND</div>
-              <div className="portfolio-info">
-                <span>03 / PROMOTIONAL</span>
-                <h3>Brand Visuals</h3>
-              </div>
-            </div>
-          </div>
-
-          <p className="portfolio-note">
-            Portfolio previews will be replaced with actual
-            editing projects through the Admin Dashboard.
-          </p>
+          ) : (
+            <p className="portfolio-note">
+              Our creative projects will appear here soon. Stay tuned!
+            </p>
+          )}
         </div>
       </section>
 
