@@ -374,11 +374,11 @@ export default function Home() {
                 <p>{service.desc}</p>
 
                 <a
-                  href="/order"
-                  className="service-order-link"
-                >
-                  Get Started <ArrowRight size={16} />
-                </a>
+  href={`/services/${service.slug}`}
+  className="service-order-link"
+>
+  View Details <ArrowRight size={16} />
+</a>
               </div>
             ))}
           </div>
