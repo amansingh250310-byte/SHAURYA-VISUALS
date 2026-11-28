@@ -8,6 +8,11 @@ import { supabase } from "../../lib/supabase";
 export default function OrderPage() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [trackingDetails, setTrackingDetails] = useState<{
+    id: string;
+    token: string;
+  } | null>(null);
+
   const [form, setForm] = useState({
     customer_name: "",
     email: "",
@@ -28,9 +33,15 @@ export default function OrderPage() {
     e.preventDefault();
     setLoading(true);
     setMessage("");
+    setTrackingDetails(null);
+
+    const orderId = crypto.randomUUID();
+    const trackingToken = crypto.randomUUID();
 
     const { error } = await supabase.from("orders").insert([
       {
+        id: orderId,
+        tracking_token: trackingToken,
         customer_name: form.customer_name.trim(),
         email: form.email.trim(),
         phone: form.phone.trim(),
@@ -45,11 +56,17 @@ export default function OrderPage() {
 
     if (error) {
       setMessage("Order submit नहीं हुआ। कृपया दोबारा कोशिश करें।");
-      console.error(error);
+      console.error("Order Error:", error);
       return;
     }
 
+    setTrackingDetails({
+      id: orderId,
+      token: trackingToken,
+    });
+
     setMessage("🎉 आपका Order सफलतापूर्वक Submit हो गया!");
+
     setForm({
       customer_name: "",
       email: "",
@@ -243,6 +260,63 @@ export default function OrderPage() {
             }}>
               {message}
             </p>
+          )}
+
+          {trackingDetails && (
+            <div style={{
+              marginTop: "22px",
+              padding: "18px",
+              borderRadius: "12px",
+              border: "1px solid #9333ea",
+              background: "#1a1028",
+            }}>
+              <h2 style={{ color: "#d8b4fe", fontSize: "21px" }}>
+                Your Tracking Details
+              </h2>
+
+              <p style={{ color: "#aaa", fontSize: "13px" }}>
+                इन दोनों Codes को सुरक्षित रखें। इनके बिना Order Track नहीं होगा।
+              </p>
+
+              <p style={{ marginTop: "16px", fontSize: "13px", color: "#c084fc" }}>
+                ORDER ID
+              </p>
+              <p style={{ overflowWrap: "anywhere", fontSize: "14px" }}>
+                {trackingDetails.id}
+              </p>
+
+              <p style={{ marginTop: "16px", fontSize: "13px", color: "#c084fc" }}>
+                PRIVATE TRACKING CODE
+              </p>
+              <p style={{ overflowWrap: "anywhere", fontSize: "14px" }}>
+                {trackingDetails.token}
+              </p>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const details =
+                    `Order ID: ${trackingDetails.id}\n` +
+                    `Tracking Code: ${trackingDetails.token}`;
+                  navigator.clipboard.writeText(details)
+                    .then(() => setMessage("Tracking Details copied successfully!"))
+                    .catch(() => setMessage("Copy नहीं हुआ। Codes manually save करें।"));
+                }}
+                style={{
+                  width: "100%",
+                  padding: "12px",
+                  marginTop: "18px",
+                  border: "none",
+                  borderRadius: "9px",
+                  background: "#9333ea",
+                  color: "white",
+                  fontWeight: "bold",
+                  cursor: "pointer",
+                }}
+              >
+                COPY TRACKING DETAILS
+              </button>
+            </div>
           )}
         </form>
 
