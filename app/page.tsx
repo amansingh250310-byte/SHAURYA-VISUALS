@@ -154,16 +154,19 @@ export default function Home() {
               with creativity, passion and precision.
             </p>
 
-            <div className="hero-actions">
-              <a href="#services" className="primary-btn">
-                Explore Services <ArrowRight size={18} />
-              </a>
+<div className="hero-actions">
+  <a href="/order" className="primary-btn">
+    Order Now <ArrowRight size={18} />
+  </a>
 
-              <a href="#portfolio" className="outline-btn">
-                <Play size={17} /> View Our Work
-              </a>
-            </div>
+  <a href="/track" className="outline-btn">
+    Track Your Order
+  </a>
 
+  <a href="#portfolio" className="outline-btn">
+    <Play size={17} /> View Our Work
+  </a>
+</div>
             <div className="hero-trust">
               <span><CheckCircle2 size={16} /> Creative Editing</span>
               <span><CheckCircle2 size={16} /> Custom Projects</span>
