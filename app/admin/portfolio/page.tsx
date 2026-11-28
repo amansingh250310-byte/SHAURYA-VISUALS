@@ -1,4 +1,4 @@
-
+```tsx
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
@@ -14,6 +14,15 @@ type Project = {
   media_type: string;
 };
 
+const categories = [
+  { value: "reels-shorts", label: "Reels & Shorts Editing" },
+  { value: "youtube", label: "YouTube Video Editing" },
+  { value: "wedding-events", label: "Wedding & Events" },
+  { value: "promotional", label: "Promotional Videos" },
+  { value: "business-branding", label: "Business & Branding" },
+  { value: "creative-editing", label: "Creative Editing" },
+];
+
 export default function PortfolioAdminPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [authorized, setAuthorized] = useState(false);
@@ -22,7 +31,7 @@ export default function PortfolioAdminPage() {
   const [message, setMessage] = useState("");
 
   const [title, setTitle] = useState("");
-  const [category, setCategory] = useState("Reels");
+  const [category, setCategory] = useState("reels-shorts");
   const [description, setDescription] = useState("");
   const [file, setFile] = useState<File | null>(null);
 
@@ -40,82 +49,80 @@ export default function PortfolioAdminPage() {
     setProjects((data || []) as Project[]);
   };
 
-  
+  useEffect(() => {
+    let active = true;
 
-useEffect(() => {
-  let active = true;
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_OUT" && active) {
+        setAuthorized(false);
+        window.location.replace("/login");
+      }
+    });
 
-  const {
-    data: { subscription },
-  } = supabase.auth.onAuthStateChange((event) => {
-    if (event === "SIGNED_OUT" && active) {
-      setAuthorized(false);
-      window.location.replace("/login");
-    }
-  });
+    const checkAdmin = async () => {
+      const { data } = await supabase.auth.getUser();
 
-  const checkAdmin = async () => {
-    setLoading(true);
+      if (!active) return;
 
-    const { data } = await supabase.auth.getUser();
+      if (!data.user) {
+        setMessage("पहले Admin Login करें।");
+        setLoading(false);
+        return;
+      }
 
-    if (!active) return;
+      const { data: profile, error } = await supabase
+        .from("profiles")
+        .select("role, approved")
+        .eq("id", data.user.id)
+        .maybeSingle();
 
-    if (!data.user) {
-      setMessage("पहले Admin Login करें।");
-      setLoading(false);
-      return;
-    }
+      if (!active) return;
 
-    const { data: profile, error } = await supabase
-      .from("profiles")
-      .select("role, approved")
-      .eq("id", data.user.id)
-      .maybeSingle();
+      if (
+        error ||
+        profile?.role !== "admin" ||
+        profile?.approved !== true
+      ) {
+        setMessage("Access Denied! केवल Approved Admin प्रवेश कर सकता है।");
+        setLoading(false);
+        return;
+      }
 
-    if (!active) return;
+      setAuthorized(true);
+      await loadProjects();
 
-    if (
-      error ||
-      profile?.role !== "admin" ||
-      profile?.approved !== true
-    ) {
-      setMessage("Access Denied! केवल Approved Admin प्रवेश कर सकता है।");
-      setLoading(false);
-      return;
-    }
+      if (active) setLoading(false);
+    };
 
-    setAuthorized(true);
-    await loadProjects();
+    checkAdmin();
 
-    if (active) setLoading(false);
-  };
-
-  checkAdmin();
-
-  return () => {
-    active = false;
-    subscription.unsubscribe();
-  };
-}, []);
-
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
+  }, []);
 
   const uploadProject = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     if (!file) {
-      setMessage("कृपया Video या Image चुनें।");
+      setMessage("कृपया MP4 Video चुनें।");
       return;
     }
 
-    if (!file.type.startsWith("image/") &&
-        !file.type.startsWith("video/")) {
-      setMessage("केवल Image और Video फाइलें अपलोड कर सकते हैं।");
+    const isMp4 =
+      file.type === "video/mp4" ||
+      file.name.toLowerCase().endsWith(".mp4");
+
+    if (!isMp4) {
+      setMessage("केवल MP4 वीडियो अपलोड कर सकते हैं।");
       return;
     }
 
     if (file.size > 50 * 1024 * 1024) {
-      setMessage("File का Size 50 MB से कम होना चाहिए।");
+      setMessage("Video का Size 50 MB से कम होना चाहिए।");
       return;
     }
 
@@ -130,6 +137,7 @@ useEffect(() => {
       .upload(filePath, file, {
         cacheControl: "3600",
         upsert: false,
+        contentType: "video/mp4",
       });
 
     if (uploadError) {
@@ -142,8 +150,6 @@ useEffect(() => {
       .from("shaurya-assets")
       .getPublicUrl(filePath);
 
-    const mediaType = file.type.startsWith("video/") ? "video" : "image";
-
     const { error: insertError } = await supabase
       .from("portfolio")
       .insert({
@@ -151,7 +157,7 @@ useEffect(() => {
         category,
         description: description.trim(),
         media_url: publicData.publicUrl,
-        media_type: mediaType,
+        media_type: "video",
       });
 
     if (insertError) {
@@ -165,14 +171,18 @@ useEffect(() => {
     }
 
     setTitle("");
-    setCategory("Reels");
+    setCategory("reels-shorts");
     setDescription("");
     setFile(null);
 
-    const fileInput = document.getElementById("portfolio-file") as HTMLInputElement;
+    const fileInput = document.getElementById(
+      "portfolio-file"
+    ) as HTMLInputElement;
+
     if (fileInput) fileInput.value = "";
 
-    setMessage("🎉 Portfolio Project सफलतापूर्वक Upload हो गया!");
+    setMessage("🎉 MP4 Video सफलतापूर्वक Upload हो गया!");
+
     await loadProjects();
     setUploading(false);
   };
@@ -211,6 +221,17 @@ useEffect(() => {
     );
   };
 
+  const inputStyle = {
+    width: "100%",
+    padding: "13px",
+    borderRadius: "9px",
+    border: "1px solid #443653",
+    background: "#17151e",
+    color: "white",
+    boxSizing: "border-box" as const,
+    marginTop: "7px",
+  };
+
   if (loading) {
     return (
       <main style={{
@@ -247,17 +268,6 @@ useEffect(() => {
     );
   }
 
-  const inputStyle = {
-    width: "100%",
-    padding: "13px",
-    borderRadius: "9px",
-    border: "1px solid #443653",
-    background: "#17151e",
-    color: "white",
-    boxSizing: "border-box" as const,
-    marginTop: "7px",
-  };
-
   return (
     <main style={{
       minHeight: "100vh",
@@ -278,7 +288,7 @@ useEffect(() => {
         </h1>
 
         <p style={{ color: "#aaa" }}>
-          Upload and manage your creative projects.
+          अपनी छह Services के लिए MP4 Videos Upload और Manage करें।
         </p>
 
         <form
@@ -291,10 +301,10 @@ useEffect(() => {
             marginTop: "25px",
           }}
         >
-          <h2 style={{ marginTop: 0 }}>Upload New Project</h2>
+          <h2 style={{ marginTop: 0 }}>Upload New Video</h2>
 
           <label>
-            Project Title *
+            Video Title *
             <input
               style={inputStyle}
               value={title}
@@ -308,30 +318,30 @@ useEffect(() => {
           <br /><br />
 
           <label>
-            Category *
+            Service Category *
             <select
               style={inputStyle}
               value={category}
               onChange={(e) => setCategory(e.target.value)}
+              required
             >
-              <option value="Reels">Instagram Reels</option>
-              <option value="YouTube">YouTube Videos</option>
-              <option value="Wedding">Wedding Videos</option>
-              <option value="Promotional">Promotional Videos</option>
-              <option value="Business">Business Videos</option>
-              <option value="Other">Other Creative Projects</option>
+              {categories.map((item) => (
+                <option key={item.value} value={item.value}>
+                  {item.label}
+                </option>
+              ))}
             </select>
           </label>
 
           <br /><br />
 
           <label>
-            Project Description
+            Video Description
             <textarea
               style={{ ...inputStyle, minHeight: "90px" }}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Write about this project..."
+              placeholder="Write about this video..."
               maxLength={1000}
             />
           </label>
@@ -339,19 +349,19 @@ useEffect(() => {
           <br /><br />
 
           <label>
-            Select Video or Image *
+            Select MP4 Video *
             <input
               id="portfolio-file"
               style={inputStyle}
               type="file"
-              accept="image/*,video/*"
+              accept=".mp4,video/mp4"
               onChange={(e) => setFile(e.target.files?.[0] || null)}
               required
             />
           </label>
 
           <p style={{ color: "#999", fontSize: "12px" }}>
-            Maximum file size: 50 MB
+            केवल MP4 Format | Maximum Size: 50 MB
           </p>
 
           <button
@@ -369,7 +379,7 @@ useEffect(() => {
               cursor: uploading ? "wait" : "pointer",
             }}
           >
-            {uploading ? "Uploading..." : "UPLOAD PROJECT"}
+            {uploading ? "Uploading..." : "UPLOAD MP4 VIDEO"}
           </button>
 
           {message && (
@@ -388,7 +398,9 @@ useEffect(() => {
         </h2>
 
         {projects.length === 0 ? (
-          <p style={{ color: "#aaa" }}>अभी कोई Project Upload नहीं हुआ है।</p>
+          <p style={{ color: "#aaa" }}>
+            अभी कोई Video Upload नहीं हुआ है।
+          </p>
         ) : (
           <div style={{
             display: "grid",
@@ -412,6 +424,7 @@ useEffect(() => {
                     src={project.media_url}
                     controls
                     playsInline
+                    preload="metadata"
                     style={{
                       width: "100%",
                       maxHeight: "220px",
@@ -433,7 +446,13 @@ useEffect(() => {
                 )}
 
                 <h3>{project.title}</h3>
-                <p style={{ color: "#c084fc" }}>{project.category}</p>
+
+                <p style={{ color: "#c084fc" }}>
+                  {categories.find(
+                    (item) => item.value === project.category
+                  )?.label || project.category}
+                </p>
+
                 <p style={{ color: "#aaa", fontSize: "14px" }}>
                   {project.description}
                 </p>
@@ -456,3 +475,4 @@ useEffect(() => {
     </main>
   );
 }
+```
