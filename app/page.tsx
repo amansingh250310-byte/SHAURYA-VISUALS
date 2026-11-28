@@ -36,37 +36,42 @@ const whatsapp =
 
 const services = [
   {
-    icon: <Video size={28} />,
+    slug: "reels-shorts",
+    icon: "🎬",
     title: "Reels & Shorts Editing",
-    desc: "Eye-catching Instagram Reels and YouTube Shorts with stylish transitions.",
+    desc: "Instagram Reels and YouTube Shorts Editing",
   },
   {
-    icon: <Youtube size={28} />,
+    slug: "youtube",
+    icon: "▶️",
     title: "YouTube Video Editing",
-    desc: "Professional long-form videos, cinematic cuts and engaging storytelling.",
+    desc: "Professional YouTube Video Editing",
   },
   {
-    icon: <Camera size={28} />,
+    slug: "wedding-events",
+    icon: "💍",
     title: "Wedding & Events",
-    desc: "Beautiful cinematic memories with creative editing and smooth effects.",
+    desc: "Cinematic Wedding and Event Videos",
   },
   {
-    icon: <Clapperboard size={28} />,
+    slug: "promotional",
+    icon: "📢",
     title: "Promotional Videos",
-    desc: "Creative advertisements and promotional videos for your brand.",
+    desc: "Brand Advertisement and Promotional Videos",
   },
   {
-    icon: <MonitorPlay size={28} />,
+    slug: "business-branding",
+    icon: "🏢",
     title: "Business & Branding",
-    desc: "Professional visuals that help your business make an impression.",
+    desc: "Professional Business Visuals",
   },
   {
-    icon: <WandSparkles size={28} />,
+    slug: "creative-editing",
+    icon: "✨",
     title: "Creative Editing",
-    desc: "Unique visual effects, color grading and custom editing projects.",
+    desc: "Custom Creative Editing Projects",
   },
 ];
-
 const features = [
   "Creative and modern editing",
   "Attention to every detail",
