@@ -30,7 +30,9 @@ type PortfolioItem = {
 
 const whatsapp =
   "https://wa.me/917007927037?text=" +
-  encodeURIComponent("Hello SHAURYA VISUALS! I want to order a video editing service.");
+  encodeURIComponent(
+    "Hello SHAURYA VISUALS! I want to order a video editing service."
+  );
 
 const services = [
   {
@@ -75,12 +77,20 @@ const features = [
 export default function Home() {
   const [projects, setProjects] = useState<PortfolioItem[]>([]);
   const [portfolioLoading, setPortfolioLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
 
+  // Load public portfolio projects
   useEffect(() => {
+    let active = true;
+
     async function loadPortfolio() {
       const { data, error } = await supabase
         .from("portfolio")
-        .select("id, title, category, description, media_url, media_type");
+        .select(
+          "id, title, category, description, media_url, media_type"
+        );
+
+      if (!active) return;
 
       if (error) {
         console.error("Portfolio loading error:", error.message);
@@ -92,10 +102,53 @@ export default function Home() {
     }
 
     loadPortfolio();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  // Check whether the logged-in user is an approved admin
+  useEffect(() => {
+    let active = true;
+
+    async function checkAdmin() {
+      const { data: authData, error: authError } =
+        await supabase.auth.getUser();
+
+      if (!active) return;
+
+      if (authError || !authData.user) {
+        setIsAdmin(false);
+        return;
+      }
+
+      const { data: profile, error: profileError } =
+        await supabase
+          .from("profiles")
+          .select("role, approved")
+          .eq("id", authData.user.id)
+          .maybeSingle();
+
+      if (!active) return;
+
+      setIsAdmin(
+        !profileError &&
+        profile?.role === "admin" &&
+        profile?.approved === true
+      );
+    }
+
+    checkAdmin();
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   return (
     <main>
+      {/* NAVBAR */}
       <nav className="navbar">
         <div className="container nav-inner">
           <a href="#" className="brand">
@@ -115,20 +168,28 @@ export default function Home() {
           </div>
 
           <div className="hero-actions">
-  <a href="/order" className="primary-btn nav-cta">
-    Order Now <ArrowRight size={17} />
-  </a>
+            <a href="/order" className="primary-btn nav-cta">
+              Order Now <ArrowRight size={17} />
+            </a>
 
-  <a href="/track" className="outline-btn nav-cta">
-    Track Order
-  </a>
-</div>
+            <a href="/track" className="outline-btn nav-cta">
+              Track Order
+            </a>
+
+            {isAdmin && (
+              <a href="/admin" className="primary-btn nav-cta">
+                Admin Dashboard <ArrowRight size={17} />
+              </a>
+            )}
+          </div>
+
           <a href="#services" className="mobile-menu">
             <Menu size={25} />
           </a>
         </div>
       </nav>
 
+      {/* HERO */}
       <section className="hero" id="home">
         <div className="hero-orb orb-one" />
         <div className="hero-orb orb-two" />
@@ -154,27 +215,33 @@ export default function Home() {
               with creativity, passion and precision.
             </p>
 
-<div className="hero-actions">
-  <a href="/order" className="primary-btn">
-    Order Now <ArrowRight size={18} />
-  </a>
+            <div className="hero-actions">
+              <a href="/order" className="primary-btn">
+                Order Now <ArrowRight size={18} />
+              </a>
 
-  <a href="/track" className="outline-btn">
-    Track Your Order
-  </a>
+              <a href="/track" className="outline-btn">
+                Track Your Order
+              </a>
 
-  <a href="#portfolio" className="outline-btn">
-    <Play size={17} /> View Our Work
-  </a>
-</div>
+              <a href="#portfolio" className="outline-btn">
+                <Play size={17} /> View Our Work
+              </a>
+            </div>
+
             <div className="hero-trust">
-              <span><CheckCircle2 size={16} /> Creative Editing</span>
-              <span><CheckCircle2 size={16} /> Custom Projects</span>
+              <span>
+                <CheckCircle2 size={16} /> Creative Editing
+              </span>
+              <span>
+                <CheckCircle2 size={16} /> Custom Projects
+              </span>
             </div>
           </div>
 
           <div className="hero-visual">
             <div className="visual-glow" />
+
             <div className="visual-card glass">
               <div className="visual-top">
                 <span className="live-dot" /> CREATIVE STUDIO
@@ -188,12 +255,15 @@ export default function Home() {
                   <h2 className="gradient-text">INSPIRE.</h2>
                   <p>MAKE IT VISUAL.</p>
                 </div>
+
                 <div className="screen-ring ring-one" />
                 <div className="screen-ring ring-two" />
               </div>
 
               <div className="timeline">
-                <span className="timeline-play"><Play size={12} /></span>
+                <span className="timeline-play">
+                  <Play size={12} />
+                </span>
                 <div className="timeline-track">
                   <span />
                 </div>
@@ -223,11 +293,14 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ABOUT */}
       <section className="section about" id="about">
         <div className="container about-grid">
           <div className="about-art glass">
             <div className="about-logo">SV</div>
-            <span className="about-caption">CREATIVITY IN EVERY FRAME</span>
+            <span className="about-caption">
+              CREATIVITY IN EVERY FRAME
+            </span>
             <div className="about-decoration" />
           </div>
 
@@ -235,11 +308,13 @@ export default function Home() {
             <div className="eyebrow">
               <Sparkles size={15} /> WHO WE ARE
             </div>
+
             <h2 className="section-title">
               NOT JUST EDITING.
               <br />
               <span className="gradient-text">IT'S AN ART.</span>
             </h2>
+
             <p>
               SHAURYA VISUALS is a creative video editing studio
               focused on transforming ideas into memorable
@@ -256,22 +331,29 @@ export default function Home() {
               ))}
             </div>
 
-            <a href={whatsapp} target="_blank" rel="noreferrer"
-              className="outline-btn">
+            <a
+              href={whatsapp}
+              target="_blank"
+              rel="noreferrer"
+              className="outline-btn"
+            >
               Work With Us <ArrowRight size={17} />
             </a>
           </div>
         </div>
       </section>
 
+      {/* SERVICES */}
       <section className="section services" id="services">
         <div className="container">
           <div className="eyebrow centered">
             <Sparkles size={15} /> WHAT WE DO
           </div>
+
           <h2 className="section-title">
             OUR <span className="gradient-text">SERVICES</span>
           </h2>
+
           <p className="section-subtitle">
             Creative solutions for every kind of visual story.
           </p>
@@ -280,10 +362,16 @@ export default function Home() {
             {services.map((service, index) => (
               <div className="card service-card" key={service.title}>
                 <div className="service-icon">{service.icon}</div>
-                <span className="service-number">0{index + 1}</span>
+                <span className="service-number">
+                  0{index + 1}
+                </span>
                 <h3>{service.title}</h3>
                 <p>{service.desc}</p>
-                <a href={whatsapp} target="_blank" rel="noreferrer">
+
+                <a
+                  href="/order"
+                  className="service-order-link"
+                >
                   Get Started <ArrowRight size={16} />
                 </a>
               </div>
@@ -292,20 +380,25 @@ export default function Home() {
         </div>
       </section>
 
+      {/* PORTFOLIO */}
       <section className="section portfolio" id="portfolio">
         <div className="container">
           <div className="eyebrow centered">
             <Sparkles size={15} /> OUR CREATIVE WORLD
           </div>
+
           <h2 className="section-title">
             SELECTED <span className="gradient-text">WORK</span>
           </h2>
+
           <p className="section-subtitle">
             A glimpse into our latest creative projects.
           </p>
 
           {portfolioLoading ? (
-            <p className="portfolio-note">Loading creative projects...</p>
+            <p className="portfolio-note">
+              Loading creative projects...
+            </p>
           ) : projects.length > 0 ? (
             <div className="portfolio-grid">
               {projects.map((project) => (
@@ -342,8 +435,12 @@ export default function Home() {
                     <span>
                       {(project.category || "CREATIVE PROJECT").toUpperCase()}
                     </span>
+
                     <h3>{project.title}</h3>
-                    {project.description && <p>{project.description}</p>}
+
+                    {project.description && (
+                      <p>{project.description}</p>
+                    )}
                   </div>
                 </div>
               ))}
@@ -356,17 +453,20 @@ export default function Home() {
         </div>
       </section>
 
+      {/* PRICING */}
       <section className="section pricing" id="pricing">
         <div className="container pricing-box glass">
           <div>
             <div className="eyebrow">
               <Sparkles size={15} /> SIMPLE & FLEXIBLE
             </div>
+
             <h2 className="section-title">
               YOUR PROJECT.
               <br />
               <span className="gradient-text">YOUR PRICE.</span>
             </h2>
+
             <p>
               Every editing project is unique. Tell us what
               you need and get a personalized quotation.
@@ -374,40 +474,60 @@ export default function Home() {
           </div>
 
           <div className="pricing-action">
-            <span className="price-label">CUSTOM PROJECT PRICING</span>
+            <span className="price-label">
+              CUSTOM PROJECT PRICING
+            </span>
+
             <h3>Let's Discuss</h3>
+
             <p>Get a quote based on your requirements.</p>
-            <a href={whatsapp} target="_blank" rel="noreferrer"
-              className="primary-btn">
+
+            <a href="/order" className="primary-btn">
               Get a Free Quote <ArrowRight size={18} />
             </a>
           </div>
         </div>
       </section>
 
+      {/* CONTACT */}
       <section className="section contact" id="contact">
         <div className="container contact-box">
           <div className="eyebrow centered">
             <Sparkles size={15} /> LET'S CREATE SOMETHING
           </div>
+
           <h2 className="section-title">
             HAVE A PROJECT
             <br />
             <span className="gradient-text">IN MIND?</span>
           </h2>
+
           <p className="section-subtitle">
             Your vision deserves to be seen. Let's bring it to life.
           </p>
 
-          <a href={whatsapp} target="_blank" rel="noreferrer"
-            className="primary-btn contact-btn">
+          <a
+            href="/order"
+            className="primary-btn contact-btn"
+          >
             <MessageCircle size={19} />
-            ORDER ON WHATSAPP
+            ORDER NOW
             <ArrowRight size={18} />
           </a>
+
+          <p style={{ marginTop: "18px" }}>
+            Already placed an order?{" "}
+            <a
+              href="/track"
+              style={{ color: "#c084fc" }}
+            >
+              Track Your Order
+            </a>
+          </p>
         </div>
       </section>
 
+      {/* FOOTER */}
       <footer className="footer">
         <div className="container footer-inner">
           <a href="#" className="brand">
@@ -418,16 +538,25 @@ export default function Home() {
             </span>
           </a>
 
-          <p>© {new Date().getFullYear()} SHAURYA VISUALS. All rights reserved.</p>
+          <p>
+            © {new Date().getFullYear()} SHAURYA VISUALS.
+            All rights reserved.
+          </p>
 
           <div className="social-links">
-            <a href={whatsapp} target="_blank" rel="noreferrer"
-              aria-label="WhatsApp">
+            <a
+              href={whatsapp}
+              target="_blank"
+              rel="noreferrer"
+              aria-label="WhatsApp"
+            >
               <MessageCircle size={19} />
             </a>
+
             <a href="#contact" aria-label="Instagram">
               <Instagram size={19} />
             </a>
+
             <a href="#contact" aria-label="YouTube">
               <Youtube size={19} />
             </a>
@@ -435,6 +564,7 @@ export default function Home() {
         </div>
       </footer>
 
+      {/* FLOATING WHATSAPP */}
       <a
         className="whatsapp-float"
         href={whatsapp}
