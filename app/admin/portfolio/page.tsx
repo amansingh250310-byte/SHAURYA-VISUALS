@@ -41,6 +41,7 @@ export default function PortfolioAdminPage() {
   };
 
   
+
 useEffect(() => {
   let active = true;
 
@@ -55,40 +56,37 @@ useEffect(() => {
 
   const checkAdmin = async () => {
     setLoading(true);
-    setError("");
 
-    const { data: authData, error: authError } =
-      await supabase.auth.getUser();
+    const { data } = await supabase.auth.getUser();
 
     if (!active) return;
 
-    if (authError || !authData.user) {
-      setError("पहले Admin Account से Login करें।");
+    if (!data.user) {
+      setMessage("पहले Admin Login करें।");
       setLoading(false);
       return;
     }
 
-    const { data: profile, error: profileError } =
-      await supabase
-        .from("profiles")
-        .select("role, approved")
-        .eq("id", authData.user.id)
-        .maybeSingle();
+    const { data: profile, error } = await supabase
+      .from("profiles")
+      .select("role, approved")
+      .eq("id", data.user.id)
+      .maybeSingle();
 
     if (!active) return;
 
     if (
-      profileError ||
+      error ||
       profile?.role !== "admin" ||
       profile?.approved !== true
     ) {
-      setError("Access Denied! केवल Approved Admin प्रवेश कर सकता है।");
+      setMessage("Access Denied! केवल Approved Admin प्रवेश कर सकता है।");
       setLoading(false);
       return;
     }
 
     setAuthorized(true);
-    await loadOrders();
+    await loadProjects();
 
     if (active) setLoading(false);
   };
