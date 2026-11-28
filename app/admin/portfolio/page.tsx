@@ -40,35 +40,67 @@ export default function PortfolioAdminPage() {
     setProjects((data || []) as Project[]);
   };
 
-  useEffect(() => {
-    const checkAdmin = async () => {
-      const { data } = await supabase.auth.getUser();
+  
+useEffect(() => {
+  let active = true;
 
-      if (!data.user) {
-        setMessage("पहले Admin Login करें।");
-        setLoading(false);
-        return;
-      }
+  const {
+    data: { subscription },
+  } = supabase.auth.onAuthStateChange((event) => {
+    if (event === "SIGNED_OUT" && active) {
+      setAuthorized(false);
+      window.location.replace("/login");
+    }
+  });
 
-      const { data: profile } = await supabase
+  const checkAdmin = async () => {
+    setLoading(true);
+    setError("");
+
+    const { data: authData, error: authError } =
+      await supabase.auth.getUser();
+
+    if (!active) return;
+
+    if (authError || !authData.user) {
+      setError("पहले Admin Account से Login करें।");
+      setLoading(false);
+      return;
+    }
+
+    const { data: profile, error: profileError } =
+      await supabase
         .from("profiles")
         .select("role, approved")
-        .eq("id", data.user.id)
-        .single();
+        .eq("id", authData.user.id)
+        .maybeSingle();
 
-      if (profile?.role !== "admin" || profile?.approved !== true) {
-        setMessage("Access Denied! केवल Approved Admin प्रवेश कर सकता है।");
-        setLoading(false);
-        return;
-      }
+    if (!active) return;
 
-      setAuthorized(true);
-      await loadProjects();
+    if (
+      profileError ||
+      profile?.role !== "admin" ||
+      profile?.approved !== true
+    ) {
+      setError("Access Denied! केवल Approved Admin प्रवेश कर सकता है।");
       setLoading(false);
-    };
+      return;
+    }
 
-    checkAdmin();
-  }, []);
+    setAuthorized(true);
+    await loadOrders();
+
+    if (active) setLoading(false);
+  };
+
+  checkAdmin();
+
+  return () => {
+    active = false;
+    subscription.unsubscribe();
+  };
+}, []);
+
 
   const uploadProject = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
