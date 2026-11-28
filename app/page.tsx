@@ -114,11 +114,15 @@ export default function Home() {
             <a href="#pricing">Pricing</a>
           </div>
 
-          <a href={whatsapp} target="_blank" rel="noreferrer"
-            className="primary-btn nav-cta">
-            Let's Talk <ArrowRight size={17} />
-          </a>
+          <div className="hero-actions">
+  <a href="/order" className="primary-btn nav-cta">
+    Order Now <ArrowRight size={17} />
+  </a>
 
+  <a href="/track" className="outline-btn nav-cta">
+    Track Order
+  </a>
+</div>
           <a href="#services" className="mobile-menu">
             <Menu size={25} />
           </a>
