@@ -35,44 +35,66 @@ export default function AdminPage() {
     setOrders((data || []) as Order[]);
   };
 
-  useEffect(() => {
-    const checkAdmin = async () => {
-      setLoading(true);
-      setError("");
+  
+useEffect(() => {
+  let active = true;
 
-      const { data: authData, error: authError } =
-        await supabase.auth.getUser();
+  const {
+    data: { subscription },
+  } = supabase.auth.onAuthStateChange((event) => {
+    if (event === "SIGNED_OUT" && active) {
+      setAuthorized(false);
+      window.location.replace("/login");
+    }
+  });
 
-      if (authError || !authData.user) {
-        setError("पहले Admin Account से Login करें।");
-        setLoading(false);
-        return;
-      }
+  const checkAdmin = async () => {
+    setLoading(true);
+    setError("");
 
-      const { data: profile, error: profileError } =
-        await supabase
-          .from("profiles")
-          .select("role, approved")
-          .eq("id", authData.user.id)
-          .single();
+    const { data: authData, error: authError } =
+      await supabase.auth.getUser();
 
-      if (
-        profileError ||
-        profile?.role !== "admin" ||
-        profile?.approved !== true
-      ) {
-        setError("Access Denied! केवल Approved Admin प्रवेश कर सकता है।");
-        setLoading(false);
-        return;
-      }
+    if (!active) return;
 
-      setAuthorized(true);
-      await loadOrders();
+    if (authError || !authData.user) {
+      setError("पहले Admin Account से Login करें।");
       setLoading(false);
-    };
+      return;
+    }
 
-    checkAdmin();
-  }, []);
+    const { data: profile, error: profileError } =
+      await supabase
+        .from("profiles")
+        .select("role, approved")
+        .eq("id", authData.user.id)
+        .maybeSingle();
+
+    if (!active) return;
+
+    if (
+      profileError ||
+      profile?.role !== "admin" ||
+      profile?.approved !== true
+    ) {
+      setError("Access Denied! केवल Approved Admin प्रवेश कर सकता है।");
+      setLoading(false);
+      return;
+    }
+
+    setAuthorized(true);
+    await loadOrders();
+
+    if (active) setLoading(false);
+  };
+
+  checkAdmin();
+
+  return () => {
+    active = false;
+    subscription.unsubscribe();
+  };
+}, []);
 
   const updateStatus = async (id: string, status: string) => {
     const { error } = await supabase
